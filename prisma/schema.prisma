@@ -12,13 +12,14 @@ enum Role {
 }
 
 model User {
-  id                String   @id @default(uuid())
-  email             String   @unique
-  password          String
-  role              Role     @default(admin)
-  refreshTokenHash  String?
-  createdAt         DateTime @default(now())
-  logs              Log[]
+  id               String   @id @default(uuid())
+  fullName         String
+  email            String   @unique
+  password         String
+  role             Role     @default(admin)
+  refreshTokenHash String?
+  createdAt        DateTime @default(now())
+  logs             Log[]
 }
 
 model Log {

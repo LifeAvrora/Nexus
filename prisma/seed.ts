@@ -9,7 +9,7 @@ async function main() {
   if (!existing) {
     const password = await bcrypt.hash('AdminPass123!@#', 12);
     const user = await prisma.user.create({
-      data: { email, password, role: Role.admin }
+      data: { email, password, role: Role.admin, fullName: 'Nexus Admin' }
     });
 
     await prisma.log.createMany({

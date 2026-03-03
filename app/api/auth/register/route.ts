@@ -1,8 +1,11 @@
+import bcrypt from 'bcryptjs';
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db/prisma';
 import { registerSchema } from '@/lib/validators/auth';
 import { hashPassword } from '@/lib/security/password';
 import { requireCsrf } from '@/lib/security/csrf';
+import { signAccessToken, signRefreshToken } from '@/lib/auth/jwt';
+import { setAuthCookies } from '@/lib/security/cookies';
 
 export async function POST(req: Request) {
   try {
@@ -23,9 +26,21 @@ export async function POST(req: Request) {
     }
 
     const hashed = await hashPassword(parsed.data.password);
-    await prisma.user.create({
-      data: { email: parsed.data.email, password: hashed, role: 'admin' }
+    const user = await prisma.user.create({
+      data: {
+        fullName: parsed.data.fullName,
+        email: parsed.data.email,
+        password: hashed,
+        role: 'admin'
+      }
     });
+
+    const accessToken = await signAccessToken(user.id, user.role);
+    const refreshToken = await signRefreshToken(user.id, user.role);
+    const refreshTokenHash = await bcrypt.hash(refreshToken, 12);
+
+    await prisma.user.update({ where: { id: user.id }, data: { refreshTokenHash } });
+    await setAuthCookies(accessToken, refreshToken);
 
     return NextResponse.json({ message: 'Account created' }, { status: 201 });
   } catch {
