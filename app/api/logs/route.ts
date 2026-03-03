@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db/prisma';
 import { getSession } from '@/lib/auth/session';
 import { logsQuerySchema } from '@/lib/validators/log';
+import { requireCsrf } from '@/lib/security/csrf';
 
 export async function GET(req: NextRequest) {
   const session = await getSession();
@@ -47,6 +48,10 @@ export async function DELETE(req: NextRequest) {
   const session = await getSession();
   if (!session || session.role !== 'admin') {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
+
+  if (!requireCsrf(req.headers)) {
+    return NextResponse.json({ error: 'Invalid CSRF token' }, { status: 403 });
   }
 
   const id = req.nextUrl.searchParams.get('id');

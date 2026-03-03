@@ -15,21 +15,23 @@ const csp = [
   "form-action 'self'"
 ].join('; ');
 
-export async function middleware(req: NextRequest) {
-  const { pathname } = req.nextUrl;
-  const res = NextResponse.next();
-
+function withSecurityHeaders(res: NextResponse) {
   res.headers.set('X-Frame-Options', 'DENY');
   res.headers.set('X-Content-Type-Options', 'nosniff');
   res.headers.set('Referrer-Policy', 'no-referrer');
   res.headers.set('Content-Security-Policy', csp);
   res.headers.set('Strict-Transport-Security', 'max-age=63072000; includeSubDomains; preload');
+  return res;
+}
+
+export async function middleware(req: NextRequest) {
+  const { pathname } = req.nextUrl;
 
   if (protectedPaths.some((path) => pathname.startsWith(path))) {
     const token = req.cookies.get('access_token')?.value;
     if (!token) {
       const redirect = new URL('/login', req.url);
-      return NextResponse.redirect(redirect);
+      return withSecurityHeaders(NextResponse.redirect(redirect));
     }
 
     try {
@@ -39,11 +41,11 @@ export async function middleware(req: NextRequest) {
       });
     } catch {
       const redirect = new URL('/login', req.url);
-      return NextResponse.redirect(redirect);
+      return withSecurityHeaders(NextResponse.redirect(redirect));
     }
   }
 
-  return res;
+  return withSecurityHeaders(NextResponse.next());
 }
 
 export const config = {

@@ -5,6 +5,12 @@ import { useNotify } from '@/components/notifications/notification-provider';
 
 type Log = { id: string; service: string; message: string; ip: string; createdAt: string };
 
+async function getCsrfToken() {
+  const res = await fetch('/api/auth/csrf', { cache: 'no-store' });
+  const data = await res.json();
+  return data.csrfToken as string;
+}
+
 export function LogsTable() {
   const [logs, setLogs] = useState<Log[]>([]);
   const [page, setPage] = useState(1);
@@ -25,11 +31,19 @@ export function LogsTable() {
   }, [page]);
 
   const remove = async (id: string) => {
-    const response = await fetch(`/api/logs?id=${id}`, { method: 'DELETE' });
+    const csrfToken = await getCsrfToken();
+    const response = await fetch(`/api/logs?id=${id}`, {
+      method: 'DELETE',
+      headers: { 'x-csrf-token': csrfToken }
+    });
+
     if (response.ok) {
       notify({ title: 'Success', message: 'Log removed', variant: 'success' });
       load();
+      return;
     }
+
+    notify({ title: 'Error', message: 'Delete failed', variant: 'error' });
   };
 
   const totalPages = Math.max(1, Math.ceil(total / 10));
