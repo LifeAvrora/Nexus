@@ -3,11 +3,11 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { FileText, Home, LogOut } from 'lucide-react';
+import { FileTextIcon, HomeIcon, LogOutIcon } from '@/components/icons/sidebar-icons';
 
 const items = [
-  { href: '/dashboard', label: 'Главная', icon: Home },
-  { href: '/dashboard/logs', label: 'Логи', icon: FileText }
+  { href: '/dashboard', label: 'Главная', icon: HomeIcon },
+  { href: '/dashboard/logs', label: 'Логи', icon: FileTextIcon }
 ] as const;
 
 async function getCsrfToken() {
@@ -58,7 +58,7 @@ export function Sidebar() {
           onClick={logout}
           className="mt-2 h-12 flex items-center gap-3 text-base text-[#CFCFD6] transition-colors hover:bg-[#15151C] hover:text-white md:justify-center md:pl-0 lg:justify-start lg:pl-6"
         >
-          <LogOut size={18} strokeWidth={2} className="shrink-0" />
+          <LogOutIcon size={18} strokeWidth={2} className="shrink-0" />
           <span className="hidden lg:inline">Выход</span>
         </button>
       </nav>
