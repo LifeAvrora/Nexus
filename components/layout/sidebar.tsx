@@ -3,15 +3,11 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-
-type SidebarProps = {
-  isOpen: boolean;
-  onClose: () => void;
-};
+import { FileText, Home, LogOut } from 'lucide-react';
 
 const items = [
-  { href: '/dashboard', label: 'Главная', icon: '⌂' },
-  { href: '/dashboard/logs', label: 'Логи', icon: '≡' }
+  { href: '/dashboard', label: 'Главная', icon: Home },
+  { href: '/dashboard/logs', label: 'Логи', icon: FileText }
 ] as const;
 
 async function getCsrfToken() {
@@ -20,7 +16,7 @@ async function getCsrfToken() {
   return data.csrfToken as string;
 }
 
-export function Sidebar({ isOpen, onClose }: SidebarProps) {
+export function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
 
@@ -32,70 +28,40 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
   };
 
   return (
-    <>
-      {isOpen && <button className="fixed inset-0 z-20 bg-black/60 md:block lg:hidden" onClick={onClose} aria-label="Close sidebar" />}
-
-      <aside
-        className={`fixed left-0 top-0 z-30 h-full w-[260px] border-r border-[#2A2A37] bg-[#0B0B0F] transition-transform lg:static lg:translate-x-0 ${isOpen ? 'translate-x-0' : '-translate-x-full'} hidden md:flex lg:hidden`}
-      >
-        <SidebarContent pathname={pathname} onClose={onClose} onLogout={logout} mobile />
-      </aside>
-
-      <aside className="hidden h-full w-[260px] border-r border-[#2A2A37] bg-[#0B0B0F] lg:flex">
-        <SidebarContent pathname={pathname} onClose={onClose} onLogout={logout} />
-      </aside>
-    </>
-  );
-}
-
-function SidebarContent({
-  pathname,
-  onClose,
-  onLogout,
-  mobile
-}: {
-  pathname: string;
-  onClose: () => void;
-  onLogout: () => Promise<void>;
-  mobile?: boolean;
-}) {
-  return (
-    <div className="flex h-full w-full flex-col">
-      <div className="flex h-24 items-center border-b border-[#2A2A37] px-6">
-        <Image src="/nexus-logo.svg" alt="Nexus" width={178} height={42} priority className="h-9 w-auto" />
+    <aside className="hidden h-full w-[72px] flex-col border-r border-white/5 bg-[#0B0B0F] pt-6 md:flex lg:w-[260px]">
+      <div className="px-4 lg:px-6">
+        <Image src="/nexus-logo.svg" alt="Nexus" width={178} height={42} priority className="mx-auto h-8 w-auto lg:mx-0" />
       </div>
 
-      <nav className="space-y-2 border-b border-[#2A2A37] p-4">
+      <nav className="mt-6 flex flex-1 flex-col gap-2">
         {items.map((item) => {
           const active = pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href));
+          const Icon = item.icon;
+
           return (
             <Link
               key={item.href}
               href={item.href}
-              onClick={mobile ? onClose : undefined}
-              className={`relative flex items-center gap-4 rounded-md px-4 py-4 text-base transition ${
-                active ? 'bg-[#1A1A25] text-white' : 'text-zinc-300 hover:bg-[#171720]'
+              className={`h-12 flex items-center gap-3 text-base transition-colors md:justify-center md:pl-0 lg:justify-start lg:pl-6 ${
+                active
+                  ? 'border-l-2 border-[#C62839] bg-[#14141A] text-[#F2F2F5]'
+                  : 'text-[#CFCFD6] hover:bg-[#15151C] hover:text-white'
               }`}
             >
-              {active && <span className="absolute left-0 top-3 h-12 w-1 rounded-r bg-[#D2253E]" />}
-              <span className="text-[24px] leading-none">{item.icon}</span>
-              <span className="text-[20px] font-medium">{item.label}</span>
+              <Icon size={18} strokeWidth={2} className="shrink-0" />
+              <span className="hidden lg:inline">{item.label}</span>
             </Link>
           );
         })}
 
         <button
-          onClick={onLogout}
-          className="flex w-full items-center gap-4 rounded-md px-4 py-4 text-left text-zinc-300 transition hover:bg-[#171720]"
+          onClick={logout}
+          className="mt-2 h-12 flex items-center gap-3 text-base text-[#CFCFD6] transition-colors hover:bg-[#15151C] hover:text-white md:justify-center md:pl-0 lg:justify-start lg:pl-6"
         >
-          <span className="text-[24px] leading-none">→</span>
-          <span className="text-[20px] font-medium">Выход</span>
+          <LogOut size={18} strokeWidth={2} className="shrink-0" />
+          <span className="hidden lg:inline">Выход</span>
         </button>
       </nav>
-
-      <div className="mt-auto border-t border-[#2A2A37] p-6">
-        <div className="h-10 w-28 rounded-full bg-[#1A1A25]" />
-      </div>
-    </div>
+    </aside>
   );
 }
