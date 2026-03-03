@@ -7,9 +7,10 @@
 }
 
 body {
-  @apply bg-bg text-zinc-100 antialiased;
+  @apply bg-[#0F0F14] text-zinc-100 antialiased;
 }
 
-input, button {
+input,
+button {
   @apply outline-none;
 }
