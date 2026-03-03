@@ -1,13 +1,20 @@
-import { z } from 'zod';
+function requireEnv(name: string, minLen = 1) {
+  const value = process.env[name];
+  if (!value || value.length < minLen) {
+    throw new Error(`Missing required environment variable: ${name}`);
+  }
+  return value;
+}
 
-const envSchema = z.object({
-  DATABASE_URL: z.string().min(1),
-  JWT_ACCESS_SECRET: z.string().min(32),
-  JWT_REFRESH_SECRET: z.string().min(32),
-  JWT_ISSUER: z.string().min(1),
-  JWT_AUDIENCE: z.string().min(1),
-  CSRF_SECRET: z.string().min(32),
-  APP_URL: z.string().url()
-});
+export function getJwtEnv() {
+  return {
+    accessSecret: requireEnv('JWT_ACCESS_SECRET', 32),
+    refreshSecret: requireEnv('JWT_REFRESH_SECRET', 32),
+    issuer: requireEnv('JWT_ISSUER'),
+    audience: requireEnv('JWT_AUDIENCE')
+  };
+}
 
-export const env = envSchema.parse(process.env);
+export function getCsrfSecret() {
+  return requireEnv('CSRF_SECRET', 32);
+}

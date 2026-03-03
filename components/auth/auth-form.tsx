@@ -8,6 +8,15 @@ type Mode = 'login' | 'register';
 
 const passwordPattern = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d]).{12,128}$/;
 
+async function fetchCsrfToken() {
+  const response = await fetch('/api/auth/csrf', { cache: 'no-store' });
+  if (!response.ok) {
+    throw new Error('Failed to initialize secure session token.');
+  }
+  const data = await response.json();
+  return data.csrfToken as string;
+}
+
 export function AuthForm({ mode }: { mode: Mode }) {
   const [csrfToken, setCsrfToken] = useState('');
   const [fullName, setFullName] = useState('');
@@ -19,11 +28,12 @@ export function AuthForm({ mode }: { mode: Mode }) {
   const router = useRouter();
 
   useEffect(() => {
-    fetch('/api/auth/csrf').then(async (r) => {
-      const data = await r.json();
-      setCsrfToken(data.csrfToken);
-    });
-  }, []);
+    fetchCsrfToken()
+      .then((token) => setCsrfToken(token))
+      .catch(() => {
+        notify({ title: 'Error', message: 'Security token initialization failed. Retry in a moment.', variant: 'error' });
+      });
+  }, [notify]);
 
   const passwordHint = useMemo(
     () => '12+ chars with upper/lowercase letters, number, and special symbol.',
@@ -52,29 +62,39 @@ export function AuthForm({ mode }: { mode: Mode }) {
 
     setLoading(true);
 
-    const endpoint = mode === 'login' ? '/api/auth/login' : '/api/auth/register';
-    const payload =
-      mode === 'login'
-        ? { email, password }
-        : { fullName: fullName.trim(), email, password, confirmPassword };
+    try {
+      const safeCsrfToken = csrfToken || (await fetchCsrfToken());
+      if (!csrfToken) {
+        setCsrfToken(safeCsrfToken);
+      }
 
-    const response = await fetch(endpoint, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-csrf-token': csrfToken },
-      body: JSON.stringify(payload)
-    });
+      const endpoint = mode === 'login' ? '/api/auth/login' : '/api/auth/register';
+      const payload =
+        mode === 'login'
+          ? { email, password }
+          : { fullName: fullName.trim(), email, password, confirmPassword };
 
-    const data = await response.json().catch(() => ({ error: 'Request failed' }));
-    setLoading(false);
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-csrf-token': safeCsrfToken },
+        body: JSON.stringify(payload)
+      });
 
-    if (!response.ok) {
-      notify({ title: 'Error', message: data.error || 'Request failed', variant: 'error' });
-      return;
+      const data = await response.json().catch(() => ({ error: 'Request failed' }));
+
+      if (!response.ok) {
+        notify({ title: 'Error', message: data.error || 'Request failed', variant: 'error' });
+        return;
+      }
+
+      notify({ title: 'Success', message: mode === 'login' ? 'Welcome back.' : 'Account created and signed in.', variant: 'success' });
+      router.push('/dashboard/logs');
+      router.refresh();
+    } catch {
+      notify({ title: 'Error', message: 'Unable to complete request. Please try again.', variant: 'error' });
+    } finally {
+      setLoading(false);
     }
-
-    notify({ title: 'Success', message: mode === 'login' ? 'Welcome back.' : 'Account created and signed in.', variant: 'success' });
-    router.push('/dashboard/logs');
-    router.refresh();
   };
 
   return (
@@ -132,7 +152,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
           />
         </div>
       )}
-      <button disabled={loading || !csrfToken} className="h-10 w-full rounded-md bg-red-700 text-sm font-medium hover:bg-red-600 disabled:opacity-50">
+      <button disabled={loading} className="h-10 w-full rounded-md bg-red-700 text-sm font-medium hover:bg-red-600 disabled:opacity-50">
         {loading ? 'Please wait...' : mode === 'login' ? 'Sign In' : 'Create Account'}
       </button>
     </form>
